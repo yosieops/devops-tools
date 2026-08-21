@@ -63,48 +63,48 @@ jobs:
           name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
           path: pytest.xml # Репорт-запись теста
 
-  merge-to-main:
-    needs: test
-    if: github.event_name == 'workflow_dispatch' # Предотвращаем бесконечный цикл
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # merge-to-main:
+  #   needs: test
+  #   if: github.event_name == 'workflow_dispatch' # Предотвращаем бесконечный цикл
+  #   runs-on: ubuntu-latest
+  #   permssions:
+  #     contents: write
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Merge to main
-        shell: bash
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+  #     - name: Merge to main
+  #       shell: bash
+  #       run: |
+  #         git config --global user.name "github-actions[bot]"
+  #         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
-          git checkout main
+  #         git checkout main
           
-          echo "Вливаем ветку ${{ github.event.inputs.branch_name }} в main..."
-          git merge origin/${{ github.event.inputs.branch_name }} --no-edit
+  #         echo "Вливаем ветку ${{ github.event.inputs.branch_name }} в main..."
+  #         git merge origin/${{ github.event.inputs.branch_name }} --no-edit
           
-          echo "Пушим обновленный main на GitHub..."
-          git push origin main
+  #         echo "Пушим обновленный main на GitHub..."
+  #         git push origin main
  
-  deploy:
-    needs: [test, merge-to-main] # Гарантируем, что деплоится уже влитый код
-    if: always() && (needs.test.result == 'success') && (needs.merge-to-main.result == 'success' || needs.merge-to-main.result == 'skipped')
-    runs-on: ubuntu-latest
-    steps:
-      - name: ssh-connect
-        uses: appleboy/ssh-action@v1.0.3
-        with:   
-          host: ${{ secrets.HOST }}
-          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          script: |
-            echo "Hello World!"
-            ls -lh
+  # deploy:
+  #   needs: [test, merge-to-main] # Гарантируем, что деплоится уже влитый код
+  #   if: always() && (needs.test.result == 'success') && (needs.merge-to-main.result == 'success' || needs.merge-to-main.result == 'skipped')
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: ssh-connect
+  #       uses: appleboy/ssh-action@v1.0.3
+  #       with:   
+  #         host: ${{ secrets.HOST }}
+  #         ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+  #         username: ${{ secrets.USERNAME }}
+  #         password: ${{ secrets.PASSWORD }}
+  #         port: ${{ secrets.PORT }}
+  #         script: |
+  #           echo "Hello World!"
+  #           ls -lh
 
 # Not build-config
   
