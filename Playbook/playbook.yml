@@ -1,0 +1,54 @@
+---
+- name: Base Playbook for tgbot
+  hosts: all # запуск по всем хостам из инвентаря
+  become: yes # запуск от root
+
+  tasks:
+    - name: add user
+      user:
+        name: Deploy
+        state: present
+        shell: /bin/bash # задаем оболочку для пользователя
+        groups: sudo # add user to sudo group
+        append: yes # add user to group
+
+    - name: 
+
+    - name: install docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+
+    - name: install docker-compose
+      apt:
+        name: docker-compose
+        state: present
+        update_cache: yes
+
+    - name: Получаем список актуальных версий golang
+      ansible.builtin.shell: curl -s https://go.dev/VERSION?m=text | head -n1
+      register: golang_version
+      changed_when: false
+
+    - name: Проверяем текущую установленную версию Go
+      ansible.builtin.shell: /usr/local/go/bin/go version | awk '{print $3}'
+      register: current_go_version
+      failed_when: false
+      changed_when: false
+
+    - name: Install golang (если версии не совпадают)
+      ansible.builtin.shell: |
+        rm -rf /usr/local/go
+        wget https://go.dev/dl/{{ golang_version.stdout }}.linux-amd64.tar.gz -O /tmp/go.tar.gz
+        tar -C /usr/local -xzf /tmp/go.tar.gz
+        rm -f /tmp/go.tar.gz
+      # Шаг выполнится, только если Go нет или установленная версия устарела
+      when: current_go_version.stdout != golang_version.stdout
+
+    - name: add golang to PATH
+      ansible.builtin.copy:
+        dest: /etc/profile.d/golang.sh
+        content: 'export PATH=$PATH:/usr/local/go/bin'
+        mode: '0644'
