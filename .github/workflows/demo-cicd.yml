@@ -1,0 +1,127 @@
+name: deploy-demo
+ 
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Enter branch name'
+        required: true
+        type: string
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          check-latest: true
+
+      - name: Run Ruff Linter
+        run: |
+          pip install ruff
+          ruff check . # смотрим код на ошибки
+        shell: bash
+
+  test:
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false # Делаем тесты, даже если одна из стадий упала
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Качаем зависимости и запускаем тесты
+        run: |
+          pip install -r requirements.txt
+          pip install pytest
+          pytest --junitxml=pytest.xml
+        shell: bash
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
+          path: pytest.xml # Репорт-запись теста
+
+  merge-to-main:
+    needs: test
+    if: github.event_name == 'workflow_dispatch' # Предотвращаем бесконечный цикл
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge to main
+        shell: bash
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          git checkout main
+          
+          echo "Вливаем ветку ${{ github.event.inputs.branch_name }} в main..."
+          git merge origin/${{ github.event.inputs.branch_name }} --no-edit
+          
+          echo "Пушим обновленный main на GitHub..."
+          git push origin main
+ 
+  deploy:
+    needs: [test, merge-to-main] # Гарантируем, что деплоится уже влитый код
+    if: always() && (needs.test.result == 'success') && (needs.merge-to-main.result == 'success' || needs.merge-to-main.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: ssh-connect
+        uses: appleboy/ssh-action@v1.0.3
+        with:   
+          host: ${{ secrets.HOST }}
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            echo "Hello World!"
+            ls -lh
+
+# Not build-config
+  
+            # echo "deploy start"
+            # whoami
+            
+            # cd /mnt/other-files/auctionbot_prod
+            
+            # git fetch
+            # git checkout origin/${{ github.event.inputs.branch_name || github.ref_name }} # Вытягиваем ветку
+            # git branch
+            # echo $(git branch --show-current)
+            
+            # docker compose up -d --build
+            # docker ps -a
+            
+            # echo "Состояние диска до очистки:"
+            # docker system df
+            
+            [[ $(df / | awk 'NR==2 {print int($5)}') -gt 90 ]] && docker system prune -a -f || echo "Space OK"
