@@ -49,24 +49,38 @@ jobs:
 
   deploy:
     needs: lint-and-test
+    # Триггер: запускаем ТОЛЬКО при пуше/мердже в main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - name: ssh-connect
-        uses: appleboy/ssh-action@v1.0.3
-        with:   
-          host: ${{ secrets.HOST }}
-          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          username: ${{ secrets.USERNAME }}
-          port: ${{ secrets.PORT }}
-          script: |
-            echo "Deploy start"
-            cd /mnt/other-files/auctionbot_prod
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Эмуляция деплоя на сервер
+        run: |
+          echo "Start deploy to test-server"
+        shell: bash
+  
+  # deploy:
+  #   needs: lint-and-test
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: ssh-connect
+  #       uses: appleboy/ssh-action@v1.0.3
+  #       with:   
+  #         host: ${{ secrets.HOST }}
+  #         ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+  #         username: ${{ secrets.USERNAME }}
+  #         port: ${{ secrets.PORT }}
+  #         script: |
+  #           echo "Deploy start"
+  #           cd /mnt/other-files/auctionbot_prod
             
-            git fetch
-            git checkout origin/main 
+  #           git fetch
+  #           git checkout origin/main 
             
-            docker compose up -d --build
+  #           docker compose up -d --build
             
-            echo "Состояние диска:"
-            [[ $(df / | awk 'NR==2 {print int($5)}') -gt 90 ]] && docker system prune -a -f || echo "Space OK"
+  #           echo "Состояние диска:"
+  #           [[ $(df / | awk 'NR==2 {print int($5)}') -gt 90 ]] && docker system prune -a -f || echo "Space OK"
