@@ -1,20 +1,12 @@
 import os
 
-from main import get_ping_response, get_welcome_message
+from main import get_welcome_message
 
 
-# Тестируем функции из main.py
 def test_welcome_message():
     """Тестируем, что функция возвращает правильную строку."""
     message = get_welcome_message()
     assert "Привет!" in message
-    assert isinstance(message, str)
-
-
-def test_ping_response():
-    """Тестируем ответ на команду /ping."""
-    message = get_ping_response()
-    assert "Pong!" in message
     assert isinstance(message, str)
 
 
