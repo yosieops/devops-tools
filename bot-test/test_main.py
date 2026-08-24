@@ -1,6 +1,7 @@
 import os
 
-from main import get_welcome_message, get_ping_response
+from main import get_ping_response, get_welcome_message
+
 
 # Тестируем функции из main.py
 def test_welcome_message():
