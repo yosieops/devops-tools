@@ -2,7 +2,7 @@ import os
 
 from main import get_welcome_message, get_ping_response
 
-
+# Тестируем функции из main.py
 def test_welcome_message():
     """Тестируем, что функция возвращает правильную строку."""
     message = get_welcome_message()

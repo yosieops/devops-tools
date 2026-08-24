@@ -5,7 +5,7 @@ import telebot
 # Получаем токен из переменных окружения
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "MOCK_TOKEN_FOR_TESTS")
 bot = telebot.TeleBot(TOKEN)
-
+# Если переменная окружения TELEGRAM_BOT_TOKEN не установлена, будет использован токен по умолчанию "MOCK_TOKEN
 def get_welcome_message() -> str:
     """Возвращает приветственное сообщение."""
     return "Привет! Я бот для проверки твоего CI."
