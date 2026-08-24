@@ -1,0 +1,71 @@
+name: demo-cicd
+
+on:
+  pull_request:
+    branches: [ main ]
+  
+  push:
+    branches: [ main ]
+
+jobs:
+# test + lint
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+    
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Run Ruff Linter
+        run: |
+          pip install ruff
+          ruff check .
+        shell: bash
+
+      - name: Install dependencies & Test
+        run: |
+          pip install -r requirements.txt
+          pip install pytest
+          pytest --junitxml=pytest.xml
+        shell: bash
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-ubuntu-latest-${{ matrix.python-version }}
+          path: pytest.xml
+
+  deploy:
+    needs: lint-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: ssh-connect
+        uses: appleboy/ssh-action@v1.0.3
+        with:   
+          host: ${{ secrets.HOST }}
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          username: ${{ secrets.USERNAME }}
+          port: ${{ secrets.PORT }}
+          script: |
+            echo "Deploy start"
+            cd /mnt/other-files/auctionbot_prod
+            
+            git fetch
+            git checkout origin/main 
+            
+            docker compose up -d --build
+            
+            echo "Состояние диска:"
+            [[ $(df / | awk 'NR==2 {print int($5)}') -gt 90 ]] && docker system prune -a -f || echo "Space OK"
