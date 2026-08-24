@@ -1,5 +1,6 @@
-from main import get_welcome_message
+import os
 
+from main import get_welcome_message
 
 def test_welcome_message():
     """Тестируем, что функция возвращает правильную строку."""
