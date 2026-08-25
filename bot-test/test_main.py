@@ -1,20 +1,27 @@
-import os
-
-from main import get_welcome_message
-
-from main import get_welcome_message
-
-def test_welcome_message():
-    """Тестируем, что функция возвращает правильную строку."""
-    message = get_welcome_message()
-    assert "Привет!" in message
-    assert isinstance(message, str)
+import pytest
+from main import parse_expense
 
 
-def test_token_exists():
-    """Тестируем логику работы с токеном."""
-    # Проверяем, что дефолтное значение подставляется, если переменная пустая
-    if "TELEGRAM_BOT_TOKEN" not in os.environ:
-        from main import TOKEN
+def test_parse_expense_success():
+    """Тестируем успешный парсинг корректной строки расхода."""
+    amount, category = parse_expense("150.50 продукты")
+    assert amount == 150.50
+    assert category == "продукты"
 
-        assert TOKEN == "MOCK_TOKEN_FOR_TESTS"
+
+def test_parse_expense_invalid_format():
+    """Тестируем ошибку при неверном формате (отсутствует категория)."""
+    with pytest.raises(ValueError, match="Неверный формат"):
+        parse_expense("500")
+
+
+def test_parse_expense_invalid_amount():
+    """Тестируем ошибку, если вместо суммы передана строка."""
+    with pytest.raises(ValueError, match="Сумма должна быть числом"):
+        parse_expense("abc такси")
+
+
+def test_parse_expense_negative_amount():
+    """Тестируем ошибку при отрицательной или нулевой сумме."""
+    with pytest.raises(ValueError, match="Сумма должна быть больше нуля"):
+        parse_expense("-50 кофе")
