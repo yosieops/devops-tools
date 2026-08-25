@@ -1,28 +1,19 @@
-import os
+def parse_expense(text: str) -> tuple[float, str]:
+    """Парсит строку расхода в формате 'сумма категория'.
 
-import telebot
+    Пример: '350 кофе' -> (350.0, 'кофе')
+    """
+    parts = text.strip().split(maxsplit=1)
+    if len(parts) < 2:
+        raise ValueError("Неверный формат. Используйте: сумма категория")
 
-# Получаем токен из переменных окружения
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "MOCK_TOKEN_FOR_TESTS")
-bot = telebot.TeleBot(TOKEN)
-# Если переменная окружения TELEGRAM_BOT_TOKEN не установлена, будет использован токен по умолчанию "MOCK_TOKEN
-def get_welcome_message() -> str:
-    """Возвращает приветственное сообщение."""
-    return "Привет! Я бот для проверки твоего CI."
-# Функция get_welcome_message возвращает строку приветствия, которая будет отправлена пользователю при вызове команды /start.
-def get_ping_response() -> str:
-    """Возвращает ответ для проверки доступности."""
-    return "Pong! Бот работает отлично 🚀"
+    try:
+        amount = float(parts[0])
+    except ValueError as exc:
+        raise ValueError("Сумма должна быть числом") from exc
 
-@bot.message_handler(commands=["start"])
-def send_welcome(message):
-    """Обработчик команды /start."""
-    bot.reply_to(message, get_welcome_message())
+    category = parts[1].strip()
+    if amount <= 0:
+        raise ValueError("Сумма должна быть больше нуля")
 
-@bot.message_handler(commands=["ping"])
-def send_ping(message):
-    """Обработчик команды /ping."""
-    bot.reply_to(message, get_ping_response())
-
-if __name__ == "__main__":
-    print("Бот успешно инициализирован. Запуск новой версии...")
+    return amount, category
